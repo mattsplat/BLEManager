@@ -87,6 +87,11 @@ convention, the port to NimBLE 2.x is mechanical:
    `NimBLEDevice::startAdvertising()` again inside `onConnect`.
 11. `setScanResponse(bool)` was renamed to `enableScanResponse(bool)`.
    `setScanResponseData()` is a different API for custom payloads.
+12. Reading raw characteristic bytes: `pChar->getData()` / `getLength()`
+   do not exist. Use `pChar->getValue().data()` (`const uint8_t*`) and
+   `pChar->getValue().size()` (`uint16_t`). `getValue()` returns a
+   `NimBLEAttValue` object — call `.c_str()` for `String` or `.data()` /
+   `.size()` for binary payloads (color, int sliders, datetime, etc).
 
 The descriptor JSON (`{"type":"text", ...}`) and all UUIDs (including
 the `####face` mask) are stack-agnostic — copy them unchanged.
