@@ -76,9 +76,17 @@ convention, the port to NimBLE 2.x is mechanical:
 9. Bonding: replace `BLESecurity` + `setStaticPIN` + `setAuthenticationMode`
    with `NimBLEDevice::setSecurityAuth(true, true, true)` +
    `NimBLEDevice::setSecurityPasskey(...)` +
-   `NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY)`. Replace
-   `setAccessPermissions(ESP_GATT_PERM_READ_ENCRYPTED|...)` with
-   `setAccessPermissions(NIMBLE_PROPERTY::READ_ENC | NIMBLE_PROPERTY::WRITE_ENC)`.
+   `NimBLEDevice::setSecurityIOCap(BLE_HS_IO_DISPLAY_ONLY)`. Express
+   encrypted access via `NIMBLE_PROPERTY::READ_ENC` / `WRITE_ENC`
+   merged into the `createCharacteristic` property bitmask —
+   NimBLE-Arduino 2.x has no `setAccessPermissions()` method.
+10. `MultipleClients`: there is no runtime `setMaxConnections()` in
+   NimBLE-Arduino 2.x — the maximum is the compile-time
+   `CONFIG_BT_NIMBLE_MAX_CONNECTIONS` (default 3). To accept additional
+   clients while one is already connected, call
+   `NimBLEDevice::startAdvertising()` again inside `onConnect`.
+11. `setScanResponse(bool)` was renamed to `enableScanResponse(bool)`.
+   `setScanResponseData()` is a different API for custom payloads.
 
 The descriptor JSON (`{"type":"text", ...}`) and all UUIDs (including
 the `####face` mask) are stack-agnostic — copy them unchanged.
