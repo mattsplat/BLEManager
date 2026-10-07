@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BLE Manager QR Codes</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #1b1d21;
+    --muted: #5f6570;
+    --border: #d8dbe0;
+    --accent: #2457d6;
+    --accent-text: #ffffff;
+    --error: #c62828;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #15171b;
+      --surface: #1f2228;
+      --text: #e8eaee;
+      --muted: #9aa1ad;
+      --border: #363a43;
+      --accent: #6d95ff;
+      --accent-text: #0d1220;
+      --error: #ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 16px 48px;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .subtitle { color: var(--muted); margin: 0 0 24px; }
+  .layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+  }
+  @media (max-width: 680px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+  }
+  label { display: block; font-weight: 600; margin: 0 0 4px; }
+  .field { margin-bottom: 16px; }
+  .hint { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .error { color: var(--error); font-size: 13px; margin-top: 4px; min-height: 0; }
+  input[type=text], input[type=number], select {
+    width: 100%;
+    padding: 9px 10px;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  input.invalid { border-color: var(--error); }
+  .row { display: flex; gap: 12px; }
+  .row > .field { flex: 1; min-width: 0; }
+  .payload {
+    font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    word-break: break-all;
+    min-height: 38px;
+  }
+  .preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  #preview {
+    width: 100%;
+    max-width: 320px;
+    aspect-ratio: auto;
+    background: #ffffff;
+    border-radius: 6px;
+  }
+  .empty { color: var(--muted); text-align: center; padding: 60px 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  button {
+    font: inherit;
+    font-weight: 600;
+    padding: 9px 16px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+  button:disabled { opacity: .45; cursor: default; }
+
+  /* Print: only the label, at the chosen physical size */
+  #printArea { display: none; }
+  @media print {
+    @page { margin: 10mm; }
+    body { background: #ffffff; }
+    main { display: none; }
+    #printArea { display: block; }
+    #printArea img { display: block; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>BLE Manager QR Codes</h1>
+  <p class="subtitle">Generate a QR code that adds a device in the BLE Manager app (<em>Add New Device → Scan QR Code</em>).</p>
+
+  <div class="layout">
+    <section class="card">
+      <div class="field">
+        <label for="mac">Bluetooth LE address</label>
+        <input id="mac" type="text" placeholder="AA:BB:CC:DD:EE:FF" autocomplete="off" spellcheck="false">
+        <div class="hint">On ESP32, use the address from <code>BLEDevice::getAddress()</code>, not the Wi-Fi MAC.</div>
+        <div class="error" id="macError"></div>
+      </div>
+      <div class="field">
+        <label for="name">Device name</label>
+        <input id="name" type="text" placeholder="Pump 3" autocomplete="off">
+        <div class="hint">With an address: used as the display name. Without one: the app searches for a device advertising exactly this name.</div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="caption">Caption</label>
+          <select id="caption">
+            <option value="name">Name</option>
+            <option value="mac">Address</option>
+            <option value="both">Name and address</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="printSize">Print width (mm)</label>
+          <input id="printSize" type="number" min="15" max="200" step="1" value="40">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>QR code content</label>
+        <div class="payload" id="payload"></div>
+      </div>
+    </section>
+
+    <section class="card preview">
+      <canvas id="preview" hidden></canvas>
+      <div class="empty" id="empty">Enter an address or a name</div>
+      <div class="actions">
+        <button class="primary" id="downloadPng" disabled>Download PNG</button>
+        <button id="downloadSvg" disabled>Download SVG</button>
+        <button id="print" disabled>Print</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<div id="printArea"></div>
+
+<script src="qrcode.js"></script>
+<script>
+  // Must match the parser in AddNewDeviceActivity.onQrScanned
+  const SCHEME = "blemanager:";
+  const MAC_PATTERN = /^([0-9A-F]{2}:){5}[0-9A-F]{2}$/;
+
+  const MODULE_PX = 16;       // PNG resolution per QR module
+  const QUIET_ZONE = 4;       // modules of white border, per the QR spec
+  const CAPTION_FONT = "600 {size}px system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+
+  const $ = (id) => document.getElementById(id);
+  const macInput = $("mac"), nameInput = $("name"), captionSelect = $("caption"), printSizeInput = $("printSize");
+  const canvas = $("preview");
+
+  function normalizeMac(value) {
+    return value.trim().toUpperCase().replace(/-/g, ":");
+  }
+
+  function buildPayload(mac, name) {
+    const params = [];
+    if (mac) params.push("mac=" + mac);
+    if (name) params.push("name=" + encodeURIComponent(name));
+    return params.length ? SCHEME + "?" + params.join("&") : null;
+  }
+
+  function captionLines(mac, name) {
+    switch (captionSelect.value) {
+      case "name": return [name || mac].filter(Boolean);
+      case "mac": return [mac || name].filter(Boolean);
+      case "both": return [name, mac].filter(Boolean);
+      default: return [];
+    }
+  }
+
+  function readInputs() {
+    const mac = normalizeMac(macInput.value);
+    const name = nameInput.value.trim();
+    const macValid = mac === "" || MAC_PATTERN.test(mac);
+    macInput.classList.toggle("invalid", !macValid);
+    $("macError").textContent = macValid ? "" : "Expected 6 hex byte pairs, like AA:BB:CC:DD:EE:FF";
+    if (!macValid) return null;
+    const payload = buildPayload(mac, name);
+    return payload ? { mac, name, payload } : null;
+  }
+
+  // Layout shared by the PNG and SVG renderers, in module units
+  function layout(qr, lines) {
+    const count = qr.getModuleCount();
+    const size = count + QUIET_ZONE * 2;
+    const fontSize = Math.max(2.4, size / 14);
+    const lineHeight = fontSize * 1.3;
+    const captionHeight = lines.length ? lines.length * lineHeight + QUIET_ZONE / 2 : 0;
+    return { count, size, fontSize, lineHeight, height: size + captionHeight };
+  }
+
+  function makeQr(payload) {
+    const qr = qrcode(0, "M");
+    qr.addData(payload);
+    qr.make();
+    return qr;
+  }
+
+  function drawCanvas(target, qr, lines) {
+    const l = layout(qr, lines);
+    target.width = l.size * MODULE_PX;
+    target.height = Math.ceil(l.height * MODULE_PX);
+    const ctx = target.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, target.width, target.height);
+    ctx.fillStyle = "#000000";
+    for (let r = 0; r < l.count; r++) {
+      for (let c = 0; c < l.count; c++) {
+        if (qr.isDark(r, c)) {
+          ctx.fillRect((c + QUIET_ZONE) * MODULE_PX, (r + QUIET_ZONE) * MODULE_PX, MODULE_PX, MODULE_PX);
+        }
+      }
+    }
+    ctx.font = CAPTION_FONT.replace("{size}", l.fontSize * MODULE_PX);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    lines.forEach((line, i) => {
+      const y = (l.size - QUIET_ZONE / 2 + (i + 1) * l.lineHeight - (l.lineHeight - l.fontSize) / 2) * MODULE_PX;
+      ctx.fillText(line, target.width / 2, y, target.width - MODULE_PX * 2);
+    });
+  }
+
+  function escapeXml(s) {
+    return s.replace(/[<>&"']/g, (ch) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&apos;" }[ch]));
+  }
+
+  function buildSvg(qr, lines) {
+    const l = layout(qr, lines);
+    let path = "";
+    for (let r = 0; r < l.count; r++) {
+      for (let c = 0; c < l.count; c++) {
+        if (qr.isDark(r, c)) path += `M${c + QUIET_ZONE} ${r + QUIET_ZONE}h1v1h-1z`;
+      }
+    }
+    const text = lines.map((line, i) => {
+      const y = l.size - QUIET_ZONE / 2 + (i + 1) * l.lineHeight - (l.lineHeight - l.fontSize) / 2;
+      return `<text x="${l.size / 2}" y="${y.toFixed(2)}" font-size="${l.fontSize.toFixed(2)}" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" font-weight="600" text-anchor="middle">${escapeXml(line)}</text>`;
+    }).join("");
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${l.size} ${l.height.toFixed(2)}" shape-rendering="crispEdges">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<path d="${path}" fill="#000000"/>${text}
+</svg>
+`;
+  }
+
+  function fileBaseName(state) {
+    const base = (state.name || state.mac).replace(/[^A-Za-z0-9_-]+/g, "_").replace(/^_+|_+$/g, "");
+    return "ble-qr-" + (base || "device");
+  }
+
+  function download(href, filename) {
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  let current = null;
+
+  function render() {
+    const state = readInputs();
+    current = state;
+    $("payload").textContent = state ? state.payload : "";
+    canvas.hidden = !state;
+    $("empty").hidden = !!state;
+    ["downloadPng", "downloadSvg", "print"].forEach((id) => { $(id).disabled = !state; });
+    if (!state) return;
+    state.qr = makeQr(state.payload);
+    state.lines = captionLines(state.mac, state.name);
+    drawCanvas(canvas, state.qr, state.lines);
+  }
+
+  $("downloadPng").addEventListener("click", () => {
+    if (current) download(canvas.toDataURL("image/png"), fileBaseName(current) + ".png");
+  });
+
+  $("downloadSvg").addEventListener("click", () => {
+    if (!current) return;
+    const blob = new Blob([buildSvg(current.qr, current.lines)], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    download(url, fileBaseName(current) + ".svg");
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+
+  $("print").addEventListener("click", () => {
+    if (!current) return;
+    const widthMm = Math.min(200, Math.max(15, Number(printSizeInput.value) || 40));
+    const img = new Image();
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(buildSvg(current.qr, current.lines));
+    img.style.width = widthMm + "mm";
+    const area = $("printArea");
+    area.replaceChildren(img);
+    img.decode().catch(() => {}).then(() => window.print());
+  });
+
+  [macInput, nameInput, captionSelect].forEach((el) => el.addEventListener("input", render));
+  render();
+</script>
+</body>
+</html>

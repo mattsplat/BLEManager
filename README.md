@@ -93,7 +93,7 @@ Notes:
 - Connecting by address does not work with devices that use rotating private (random) addresses. Use the name instead.
 - When searching by name, the name must be unique, because the first matching device is used.
 
-You can generate a QR code with any QR generator, for example: `qrencode -o device.png "blemanager:?mac=AA:BB:CC:DD:EE:FF&name=Pump%203"`
+To create printable QR codes, open the [QR Code Generator](Tools/QRCodeGenerator/) (`Tools/QRCodeGenerator/index.html`). It runs offline in any browser and exports PNG or SVG, or prints a label. Any other QR generator also works, for example: `qrencode -o device.png "blemanager:?mac=AA:BB:CC:DD:EE:FF&name=Pump%203"`
 
 
 ## Guide
