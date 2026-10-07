@@ -47,6 +47,11 @@
             android:configChanges="orientation|screenSize"
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
+        <!-- Allow the QR scanner to follow the device orientation instead of forcing landscape -->
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="fullSensor"
+            tools:replace="screenOrientation" />
     </application>
 
 </manifest>

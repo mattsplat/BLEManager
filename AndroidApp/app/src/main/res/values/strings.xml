@@ -73,4 +73,9 @@
     <string name="update_available">Update Available</string>
     <string name="update_dialog_content">A new version is available. Do you want to update?</string>
     <string name="update">Update</string>
+    <string name="scan_qr_code">Scan QR Code</string>
+    <string name="scan_qr_prompt">Scan the device QR code</string>
+    <string name="invalid_qr_code">QR code does not contain a valid device address or name</string>
+    <string name="looking_for_device">Looking for %1$s…</string>
+    <string name="device_not_found">Device %1$s not found</string>
 </resources>

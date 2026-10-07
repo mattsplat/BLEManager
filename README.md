@@ -75,6 +75,26 @@ In more advanced scenarios, different masks can be used to achieve more complex 
 	);
 	pCharacteristicText->addDescriptor(textDescriptor);
 
+## Adding a Device with a QR Code
+
+On the *Add New Device* screen, tap the QR code icon and scan a code printed on your device. The QR code can contain one of these values:
+
+| QR code content | Behavior |
+|---|---|
+| `blemanager:?mac=AA:BB:CC:DD:EE:FF&name=Pump%203` | Connects directly and uses the name as the display name |
+| `blemanager:?mac=AA:BB:CC:DD:EE:FF` | Connects directly |
+| `AA:BB:CC:DD:EE:FF` | Connects directly |
+| `blemanager:?name=MyDevice-00123` | Searches for a device advertising this exact name (up to 30 seconds) |
+
+Values must be URL encoded (for example, a space is `%20`). If the device is already in your list, it is opened with its existing settings.
+
+Notes:
+- Use the **Bluetooth LE** address. On ESP32, this is the address reported by `BLEDevice::getAddress()` / `NimBLEDevice::getAddress()`, which differs from the Wi-Fi MAC address.
+- Connecting by address does not work with devices that use rotating private (random) addresses. Use the name instead.
+- When searching by name, the name must be unique, because the first matching device is used.
+
+You can generate a QR code with any QR generator, for example: `qrencode -o device.png "blemanager:?mac=AA:BB:CC:DD:EE:FF&name=Pump%203"`
+
 
 ## Guide
 

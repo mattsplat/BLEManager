@@ -21,6 +21,7 @@
             app:navigationIcon="@drawable/outline_arrow_back_24"
             app:navigationContentDescription="@string/navigate_back"
             android:contentDescription="@string/add_new_device"
+            app:menu="@menu/add_new_device_activity_menu"
             app:title="@string/add_new_device">
         </com.google.android.material.appbar.MaterialToolbar>
         <com.google.android.material.progressindicator.LinearProgressIndicator

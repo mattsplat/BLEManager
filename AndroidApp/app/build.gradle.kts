@@ -98,6 +98,7 @@ dependencies {
     implementation(libs.androidx.compose.material)
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+    implementation(libs.zxing.android.embedded)
     annotationProcessor(libs.androidx.room.compiler)
     ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
